@@ -1,7 +1,6 @@
 import plotly.graph_objects as go
-import pandas as pd
 
-# Data
+# Define nodes
 platforms = [
     {"name": "Functions Consumption Plan", "group": "compute",
         "start": "2016-10", "end": "2018-06"},
@@ -15,15 +14,18 @@ platforms = [
     {"name": "API Management", "group": "gateway", "start": "2016-10", "end": None}
 ]
 
+# Define links
 links = [
     {"source": "Functions Consumption Plan",
-        "target": "Functions in Service Fabric Containers", "value": 3, "date": "2018-06"},
+        "target": "Functions in Service Fabric Containers", "value": 1, "date": "2018-06"},
     {"source": "Service Fabric Stateful Applications",
         "target": "Functions in Service Fabric Containers", "value": 1, "date": "2018-06"},
     {"source": "Functions in Service Fabric Containers",
-        "target": "Function Containers on Container Apps", "value": 4, "date": "2023-03"}
+        "target": "Function Containers on Container Apps", "value": 1, "date": "2023-03"}
 ]
 
+# Add virtual platforms representing current state
+# Indicate source and target links in nodes
 current_month = "2024-06"
 closing_platforms = []
 for platform in platforms:
@@ -46,21 +48,27 @@ for platform in platforms:
         }
         links.append(closing_link)
 
+    platform["isSource"] = False
+    platform["isTarget"] = False
+
+    for l in links:
+        if l["source"] == platform["name"]:
+            platform["isSource"] = True
+        if l["target"] == platform["name"]:
+            platform["isTarget"] = True
+
 platforms.extend(closing_platforms)
 
-# Define nodes
 labels = list(set([p["name"] for p in platforms]))
 labels.sort()
 label_to_index = {label: i for i, label in enumerate(labels)}
 
-# Define links
-
 # Create Sankey diagram components
-node_labels = labels
 link_sources = [label_to_index[link["source"]] for link in links]
 link_targets = [label_to_index[link["target"]] for link in links]
 link_values = [link["value"] for link in links]
 
+# ----------
 
 def to_month_serial(month):
     return int(month[:4])*12+int(month[5:]) if month and len(month) == 7 else 0
@@ -106,6 +114,8 @@ def nodify(nodes, node_labels, links):
 
     return x_values, y_values
 
+# ----------
+
 # def get_groups(nodes, label_to_index):
 #     groups = {}
 #     for n in nodes:
@@ -116,7 +126,7 @@ def nodify(nodes, node_labels, links):
     
 #     return [v for i, (k, v) in enumerate(groups.items())]
 
-nodified = nodify(platforms, node_labels, links)
+nodified = nodify(platforms, labels, links)
 # groups = get_groups(platforms, label_to_index)
 
 # Plotting the Sankey diagram
@@ -127,7 +137,7 @@ fig = go.Figure(data=[go.Sankey(
         pad=15,
         thickness=20,
         line=dict(color="black", width=0.5),
-        label=node_labels,
+        label=labels,
         x=nodified[0],
         y=nodified[1]
     ),
